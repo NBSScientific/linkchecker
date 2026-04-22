@@ -170,7 +170,7 @@
     </ul>
     <div class="add-site-row">
       <input type="text" id="addSiteInput" placeholder="https://yourwebsite.com" />
-      <button class="btn btn-outline">+ Add site</button>
+      <button class="btn btn-outline" id="addSiteBtn">+ Add site</button>
     </div>
   </div>
 
@@ -212,16 +212,16 @@
     <div class="results-header">
       <h2 id="resTitle">Results</h2>
       <div class="filter-row">
-        <button class="filter-btn active">All</button>
-        <button class="filter-btn">Broken</button>
-        <button class="filter-btn">Working</button>
-        <button class="filter-btn">Redirects</button>
-        <button class="filter-btn">HTTP (onveilig)</button>
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="broken">Broken</button>
+        <button class="filter-btn" data-filter="ok">Working</button>
+        <button class="filter-btn" data-filter="redirect">Redirects</button>
+        <button class="filter-btn" data-filter="http">HTTP (onveilig)</button>
       </div>
     </div>
     <div class="results-list" id="resList"></div>
     <div class="export-row">
-      <button class="btn btn-outline">Export CSV</button>
+      <button class="btn btn-outline" id="exportBtn">Export CSV</button>
     </div>
   </div>
 
@@ -234,7 +234,7 @@
     <p style="font-size:13px;color:#888;margin-bottom:14px">Links on your page that go to other websites, grouped by domain.</p>
     <div id="extMapList"></div>
     <div class="export-row">
-      <button class="btn btn-outline">Export CSV</button>
+      <button class="btn btn-outline" id="exportExtBtn">Export CSV</button>
     </div>
   </div>
 
@@ -497,9 +497,12 @@ function exportCSV() {
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startCheck(); });
 document.getElementById('startBtn').addEventListener('click', startCheck);
 document.getElementById('addSiteInput').addEventListener('keydown', e => { if (e.key === 'Enter') addSite(); });
-document.querySelector('[onclick="addSite()"]').addEventListener('click', addSite);
-document.querySelector('[onclick="exportCSV()"]').addEventListener('click', exportCSV);
-document.querySelector('[onclick="exportExtCSV()"]').addEventListener('click', exportExtCSV);
-document.querySelectorAll('[onclick^="setFilter"]').forEach(btn => {
-  const match = btn.getAttribute('onclick').match(/setFilter\('(\w+)'/);
-  if (match) btn.addEventListener('click', () => setFilter(match[
+document.getElementById('addSiteBtn').addEventListener('click', addSite);
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+document.getElementById('exportExtBtn').addEventListener('click', exportExtCSV);
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => setFilter(btn.dataset.filter, btn));
+});
+</script>
+</body>
+</html>
