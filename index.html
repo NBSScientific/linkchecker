@@ -457,9 +457,7 @@ async function startCheck() {
   const baseHost = new URL(url).hostname;
   if (!checkExt) links = links.filter(l => { try { return new URL(l).hostname === baseHost; } catch(e) { return false; } });
 
-  const MAX = 50;
-  if (links.length > MAX) { log('Found ' + links.length + ' links — checking first ' + MAX + '.'); links = links.slice(0, MAX); }
-  else log('Found ' + links.length + ' links to check.');
+  log('Found ' + links.length + ' links to check.');
 
   if (!links.length) {
     document.getElementById('progLbl').textContent = 'No links found on this page.';
