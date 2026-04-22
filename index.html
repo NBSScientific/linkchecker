@@ -184,6 +184,7 @@
     <div class="options">
       <label><input type="checkbox" id="extCheck" checked /> Include external links</label>
       <label><input type="checkbox" id="showOk" /> Show working links</label>
+      <label><input type="checkbox" id="fullSite" /> Hele website crawlen</label>
     </div>
   </div>
 
@@ -412,14 +413,15 @@ async function checkLink(url, source) {
   }
 }
 
-async function fetchLinks(url) {
+async function fetchLinks(url, fullSite) {
   const res = await fetch('/api/scrape', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url })
+    body: JSON.stringify({ url, fullSite })
   });
   const d = await res.json();
-  return d.links || [];
+  // Returns array of {url, source} objects
+  return { links: d.links || [], pagesVisited: d.pagesVisited || 1 };
 }
 
 async function startCheck() {
@@ -433,6 +435,7 @@ async function startCheck() {
   const btn = document.getElementById('startBtn');
   btn.disabled = true; btn.textContent = 'Checking...';
   currentBaseHost = new URL(url).hostname;
+  const fullSite = document.getElementById('fullSite').checked;
 
   document.getElementById('statsCard').style.display = 'block';
   document.getElementById('progCard').style.display = 'block';
@@ -444,18 +447,22 @@ async function startCheck() {
 
   log('Fetching: ' + url);
 
-  let links;
+  let fetchResult;
   try {
-    links = await fetchLinks(url);
+    fetchResult = await fetchLinks(url, fullSite);
   } catch(e) {
     log('Could not fetch the page.');
     document.getElementById('progLbl').textContent = 'Error fetching page.';
     btn.disabled = false; btn.textContent = 'Check links'; running = false; return;
   }
 
+  let links = fetchResult.links;
+  const pagesVisited = fetchResult.pagesVisited;
+  if (fullSite) log('Crawled ' + pagesVisited + ' pages, found ' + links.length + ' links.');
+  else log('Found ' + links.length + ' links to check.');
+
   const checkExt = document.getElementById('extCheck').checked;
-  const baseHost = new URL(url).hostname;
-  if (!checkExt) links = links.filter(l => { try { return new URL(l).hostname === baseHost; } catch(e) { return false; } });
+  if (!checkExt) links = links.filter(l => { try { return new URL(l.url).hostname === currentBaseHost; } catch(e) { return false; } });
 
   log('Found ' + links.length + ' links to check.');
 
@@ -470,8 +477,9 @@ async function startCheck() {
   for (let i = 0; i < links.length; i++) {
     document.getElementById('progFill').style.width = Math.round(((i + 1) / links.length) * 100) + '%';
     document.getElementById('progLbl').textContent = 'Checking ' + (i + 1) + ' of ' + links.length + '...';
-    log('Checking: ' + links[i].replace(/^https?:\/\//, '').substring(0, 70));
-    results.push(await checkLink(links[i], url));
+    const link = links[i];
+    log('Checking: ' + link.url.replace(/^https?:\/\//, '').substring(0, 70));
+    results.push(await checkLink(link.url, link.source));
     updateStats(); render();
   }
 
