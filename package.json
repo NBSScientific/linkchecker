@@ -1,0 +1,8 @@
+{
+  "name": "link-checker",
+  "version": "1.0.0",
+  "description": "Broken link checker for your websites",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Link Checker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f4f0;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container { max-width: 760px; margin: 0 auto; }
+
+  header { margin-bottom: 2rem; }
+  header h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 4px; }
+  header p { font-size: 15px; color: #666; }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e5e5e5;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #1a1a1a;
+    background: #fafafa;
+    transition: border-color .2s;
+  }
+  .input-row input:focus { outline: none; border-color: #555; background: #fff; }
+
+  .btn {
+    height: 42px;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: opacity .2s, transform .1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: #1a1a1a; color: #fff; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-outline { background: transparent; border: 1px solid #ddd; color: #444; }
+  .btn-outline:hover { background: #f5f5f5; }
+
+  .options { display: flex; gap: 1.25rem; margin-top: 12px; flex-wrap: wrap; }
+  .options label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; cursor: pointer; }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .stat { background: #f9f9f7; border-radius: 8px; padding: 14px; }
+  .stat .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .stat .val { font-size: 26px; font-weight: 600; color: #1a1a1a; }
+  .stat.green .val { color: #1a7a4a; }
+  .stat.red .val { color: #c0392b; }
+  .stat.blue .val { color: #1a5fa8; }
+
+  .progress { }
+  .progress-bar { height: 5px; background: #eee; border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+  .progress-fill { height: 100%; background: #1a1a1a; border-radius: 3px; transition: width .4s ease; }
+  .progress-label { font-size: 13px; color: #888; }
+
+  .results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .results-header h2 { font-size: 15px; font-weight: 500; }
+
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 4px 12px; border: 1px solid #ddd; border-radius: 20px;
+    font-size: 12px; background: transparent; color: #666; cursor: pointer;
+  }
+  .filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+  .results-list { border: 1px solid #eee; border-radius: 10px; overflow: hidden; }
+
+  .result-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border-bottom: 1px solid #f0f0f0; }
+  .result-item:last-child { border-bottom: none; }
+
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 48px; padding: 3px 7px; border-radius: 6px;
+    font-size: 11px; font-weight: 600; flex-shrink: 0; margin-top: 1px;
+  }
+  .badge-ok { background: #d4edda; color: #1a7a4a; }
+  .badge-broken { background: #fde8e8; color: #c0392b; }
+  .badge-redirect { background: #d1ecf1; color: #1a5fa8; }
+  .badge-warn { background: #fff3cd; color: #856404; }
+  .badge-err { background: #f0f0f0; color: #666; }
+
+  .result-url { font-size: 13px; color: #1a1a1a; word-break: break-all; margin-bottom: 2px; }
+  .stat.orange .val { color: #b45309; }
+  .badge-http { background: #fff3cd; color: #856404; }
+  .result-redirect { font-size: 12px; color: #1a5fa8; margin-bottom: 2px; word-break: break-all; }
+  .result-redirect a { color: #1a5fa8; }
+
+  .empty { padding: 3rem; text-align: center; color: #aaa; font-size: 14px; }
+
+  .log-box {
+    background: #1a1a1a; color: #a8f0a8; border-radius: 8px;
+    padding: 12px 14px; font-family: monospace; font-size: 12px;
+    max-height: 100px; overflow-y: auto; margin-top: 0;
+  }
+  .log-line { margin-bottom: 2px; }
+
+  .sites-list { list-style: none; }
+  .site-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 8px;
+  }
+  .site-item:last-child { border-bottom: none; }
+  .site-url { font-size: 14px; color: #1a1a1a; word-break: break-all; flex: 1; }
+  .site-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+  .site-remove:hover { color: #c0392b; }
+  .add-site-row { display: flex; gap: 8px; margin-top: 12px; }
+  .add-site-row input { flex: 1; height: 38px; padding: 0 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+  .add-site-row input:focus { outline: none; border-color: #555; }
+
+  .section-label { font-size: 13px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+
+  .ext-domain { margin-bottom: 14px; border: 1px solid #eee; border-radius: 10px; overflow: hidden; }
+  .ext-domain-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f9f9f7; border-bottom: 1px solid #eee; cursor: pointer; user-select: none; }
+  .ext-domain-name { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+  .ext-domain-count { font-size: 12px; color: #888; background: #eee; padding: 2px 8px; border-radius: 20px; }
+  .ext-link-item { padding: 8px 14px; border-bottom: 1px solid #f5f5f5; }
+  .ext-link-item:last-child { border-bottom: none; }
+  .ext-link-url { font-size: 13px; color: #1a5fa8; word-break: break-all; margin-bottom: 2px; }
+  .ext-link-url a { color: #1a5fa8; text-decoration: none; }
+  .ext-link-url a:hover { text-decoration: underline; }
+  .ext-link-src { font-size: 12px; color: #999; }
+  .export-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+
+  @media (max-width: 500px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .input-row { flex-direction: column; }
+    .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🔗 Link Checker</h1>
+    <p>Scan your websites for broken links instantly.</p>
+  </header>
+
+  <!-- My Sites -->
+  <div class="card">
+    <div class="section-label">My websites</div>
+    <ul class="sites-list" id="sitesList">
+      <li class="empty" id="sitesEmpty" style="padding:1rem 0;text-align:left">No sites saved yet. Add your websites below.</li>
+    </ul>
+    <div class="add-site-row">
+      <input type="text" id="addSiteInput" placeholder="https://yourwebsite.com" />
+      <button class="btn btn-outline" onclick="addSite()">+ Add site</button>
+    </div>
+  </div>
+
+  <!-- Checker -->
+  <div class="card">
+    <div class="section-label">Check a URL</div>
+    <div class="input-row">
+      <input type="text" id="urlInput" placeholder="https://yourwebsite.com" />
+      <button class="btn btn-primary" id="startBtn" onclick="startCheck()">Check links</button>
+    </div>
+    <div class="options">
+      <label><input type="checkbox" id="extCheck" checked /> Include external links</label>
+      <label><input type="checkbox" id="showOk" /> Show working links</label>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="card" id="statsCard" style="display:none">
+    <div class="stats">
+      <div class="stat"><div class="lbl">Total</div><div class="val" id="sTotal">0</div></div>
+      <div class="stat green"><div class="lbl">Working</div><div class="val" id="sOk">0</div></div>
+      <div class="stat red"><div class="lbl">Broken</div><div class="val" id="sBroken">0</div></div>
+      <div class="stat blue"><div class="lbl">Redirects</div><div class="val" id="sRedir">0</div></div>
+      <div class="stat orange"><div class="lbl">HTTP (onveilig)</div><div class="val" id="sHttp">0</div></div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="card" id="progCard" style="display:none">
+    <div class="progress">
+      <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progLbl">Starting...</div>
+    </div>
+    <div class="log-box" id="logEl" style="margin-top:12px"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" id="resCard" style="display:none">
+    <div class="results-header">
+      <h2 id="resTitle">Results</h2>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('broken',this)">Broken</button>
+        <button class="filter-btn" onclick="setFilter('ok',this)">Working</button>
+        <button class="filter-btn" onclick="setFilter('redirect',this)">Redirects</button>
+        <button class="filter-btn" onclick="setFilter('http',this)">HTTP (onveilig)</button>
+      </div>
+    </div>
+    <div class="results-list" id="resList"></div>
+    <div class="export-row">
+      <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- External Links Map -->
+  <div class="card" id="extMapCard" style="display:none">
+    <div class="results-header">
+      <h2>External links map</h2>
+      <span id="extMapCount" style="font-size:13px;color:#888"></span>
+    </div>
+    <p style="font-size:13px;color:#888;margin-bottom:14px">Links on your page that go to other websites, grouped by domain.</p>
+    <div id="extMapList"></div>
+    <div class="export-row">
+      <button class="btn btn-outline" onclick="exportExtCSV()">Export CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Sites manager ──────────────────────────────────────────
+let sites = JSON.parse(localStorage.getItem('lc_sites') || '[]');
+let results = [], filter = 'all', running = false;
+
+function saveSites() { localStorage.setItem('lc_sites', JSON.stringify(sites)); }
+
+function renderSites() {
+  const list = document.getElementById('sitesList');
+  const empty = document.getElementById('sitesEmpty');
+  if (!sites.length) { empty.style.display = 'block'; list.innerHTML = ''; list.appendChild(empty); return; }
+  empty.style.display = 'none';
+  list.innerHTML = sites.map((s, i) => `
+    <li class="site-item">
+      <span class="site-url">${s}</span>
+      <button class="site-remove" onclick="useSite('${s}')" title="Use this URL">▶</button>
+      <button class="site-remove" onclick="removeSite(${i})" title="Remove">✕</button>
+    </li>`).join('');
+}
+
+function addSite() {
+  let val = document.getElementById('addSiteInput').value.trim();
+  if (!val) return;
+  if (!val.startsWith('http')) val = 'https://' + val;
+  if (!sites.includes(val)) { sites.push(val); saveSites(); renderSites(); }
+  document.getElementById('addSiteInput').value = '';
+}
+
+function removeSite(i) { sites.splice(i, 1); saveSites(); renderSites(); }
+
+function useSite(url) {
+  document.getElementById('urlInput').value = url;
+  document.getElementById('urlInput').focus();
+}
+
+document.getElementById('addSiteInput').addEventListener('keydown', e => { if (e.key === 'Enter') addSite(); });
+renderSites();
+
+// ── Link checker ───────────────────────────────────────────
+function log(m) {
+  const el = document.getElementById('logEl');
+  const d = document.createElement('div');
+  d.className = 'log-line';
+  d.textContent = '> ' + m;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setFilter(f, btn) {
+  filter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  const list = document.getElementById('resList');
+  const showOk = document.getElementById('showOk').checked;
+  let data = results.filter(r => {
+    if (filter === 'broken') return r.type === 'broken';
+    if (filter === 'ok') return r.type === 'ok';
+    if (filter === 'redirect') return r.type === 'redirect';
+    if (filter === 'http') return r.url.startsWith('http://');
+    if (!showOk && r.type === 'ok') return false;
+    return true;
+  });
+  if (!data.length) { list.innerHTML = '<div class="empty">No results for this filter.</div>'; return; }
+  list.innerHTML = data.map(r => {
+    let cls = 'badge-err', txt = r.status || 'ERR';
+    if (r.type === 'ok') { cls = 'badge-ok'; txt = r.status || '200'; }
+    else if (r.type === 'redirect') { cls = 'badge-redirect'; txt = r.status || '301'; }
+    else if (r.status === '404') cls = 'badge-broken';
+    else if (r.status && r.status[0] === '5') cls = 'badge-warn';
+    const redirectLine = r.type === 'redirect' && r.redirectsTo
+      ? `<div class="result-redirect">↳ Redirects to: <a href="${r.redirectsTo}" target="_blank" rel="noopener">${r.redirectsTo}</a></div>`
+      : '';
+    const httpWarning = r.url.startsWith('http://')
+      ? `<span class="badge badge-http" style="font-size:10px;padding:2px 6px;margin-left:6px">HTTP onveilig</span>`
+      : '';
+    return `<div class="result-item">
+      <span class="badge ${cls}">${txt}</span>
+      <div>
+        <div class="result-url"><a href="${r.url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${r.url}</a>${httpWarning}</div>
+        ${redirectLine}
+        <div class="result-src">Found on: ${r.source}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  document.getElementById('sTotal').textContent = results.length;
+  document.getElementById('sOk').textContent = results.filter(r => r.type === 'ok').length;
+  document.getElementById('sBroken').textContent = results.filter(r => r.type === 'broken').length;
+  document.getElementById('sRedir').textContent = results.filter(r => r.type === 'redirect').length;
+  document.getElementById('sHttp').textContent = results.filter(r => r.url.startsWith('http://')).length;
+}
+
+function buildExtMap(links, baseHost) {
+  // Group external links by domain
+  const map = {};
+  for (const l of links) {
+    try {
+      const host = new URL(l.url).hostname;
+      if (host === baseHost) continue; // skip internal
+      if (!map[host]) map[host] = [];
+      map[host].push(l);
+    } catch(e) {}
+  }
+  return map;
+}
+
+function renderExtMap(map) {
+  const card = document.getElementById('extMapCard');
+  const list = document.getElementById('extMapList');
+  const count = document.getElementById('extMapCount');
+  const domains = Object.keys(map);
+  if (!domains.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const totalLinks = domains.reduce((s, d) => s + map[d].length, 0);
+  count.textContent = totalLinks + ' links to ' + domains.length + ' external domain' + (domains.length !== 1 ? 's' : '');
+  list.innerHTML = domains.sort((a,b) => map[b].length - map[a].length).map(domain => `
+    <div class="ext-domain">
+      <div class="ext-domain-header" onclick="toggleDomain(this)">
+        <span class="ext-domain-name">${domain}</span>
+        <span class="ext-domain-count">${map[domain].length} link${map[domain].length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="ext-domain-body">
+        ${map[domain].map(l => `
+          <div class="ext-link-item">
+            <div class="ext-link-url"><a href="${l.url}" target="_blank" rel="noopener">${l.url}</a></div>
+            <div class="ext-link-src">Found on: ${l.source}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function toggleDomain(header) {
+  const body = header.nextElementSibling;
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+function exportExtCSV() {
+  const rows = [['External URL', 'Domain', 'Found On']];
+  for (const r of results) {
+    try {
+      const host = new URL(r.url).hostname;
+      if (host !== currentBaseHost) rows.push([r.url, host, r.source]);
+    } catch(e) {}
+  }
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'external-links.csv'; a.click();
+}
+
+let currentBaseHost = '';
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const d = await res.json();
+    return { url, source, type: d.type, status: d.status, redirectsTo: d.redirectsTo || null, httpVersion: d.httpVersion || '?' };
+  } catch(e) {
+    return { url, source, type: 'broken', status: 'ERR', redirectsTo: null, httpVersion: '?' };
+  }
+}
+
+async function fetchLinks(url) {
+  const res = await fetch('/api/scrape', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  });
+  const d = await res.json();
+  return d.links || [];
+}
+
+async function startCheck() {
+  if (running) return;
+  let url = document.getElementById('urlInput').value.trim();
+  if (!url) { alert('Please enter a URL first.'); return; }
+  if (!url.startsWith('http')) url = 'https://' + url;
+  try { new URL(url); } catch(e) { alert('Please enter a valid URL.'); return; }
+
+  running = true; results = [];
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true; btn.textContent = 'Checking...';
+  currentBaseHost = new URL(url).hostname;
+
+  document.getElementById('statsCard').style.display = 'block';
+  document.getElementById('progCard').style.display = 'block';
+  document.getElementById('resCard').style.display = 'block';
+  document.getElementById('logEl').innerHTML = '';
+  document.getElementById('resList').innerHTML = '<div class="empty">Scanning page...</div>';
+  document.getElementById('progFill').style.width = '5%';
+  document.getElementById('progLbl').textContent = 'Fetching page...';
+
+  log('Fetching: ' + url);
+
+  let links;
+  try {
+    links = await fetchLinks(url);
+  } catch(e) {
+    log('Could not fetch the page.');
+    document.getElementById('progLbl').textContent = 'Error fetching page.';
+    btn.disabled = false; btn.textContent = 'Check links'; running = false; return;
+  }
+
+  const checkExt = document.getElementById('extCheck').checked;
+  const baseHost = new URL(url).hostname;
+  if (!checkExt) links = links.filter(l => { try { return new URL(l).hostname === baseHost; } catch(e) { return false; } });
+
+  const MAX = 50;
+  if (links.length > MAX) { log('Found ' + links.length + ' links — checking first ' + MAX + '.'); links = links.slice(0, MAX); }
+  else log('Found ' + links.length + ' links to check.');
+
+  if (!links.length) {
+    document.getElementById('progLbl').textContent = 'No links found on this page.';
+    document.getElementById('resList').innerHTML = '<div class="empty">No links found.</div>';
+    btn.disabled = false; btn.textContent = 'Check links'; running = false; return;
+  }
+
+  document.getElementById('resTitle').textContent = 'Checking ' + links.length + ' links...';
+
+  for (let i = 0; i < links.length; i++) {
+    document.getElementById('progFill').style.width = Math.round(((i + 1) / links.length) * 100) + '%';
+    document.getElementById('progLbl').textContent = 'Checking ' + (i + 1) + ' of ' + links.length + '...';
+    log('Checking: ' + links[i].replace(/^https?:\/\//, '').substring(0, 70));
+    results.push(await checkLink(links[i], url));
+    updateStats(); render();
+  }
+
+  const broken = results.filter(r => r.type === 'broken').length;
+  document.getElementById('progLbl').textContent = 'Done! Found ' + broken + ' broken link' + (broken !== 1 ? 's' : '') + '.';
+  document.getElementById('resTitle').textContent = 'Results — ' + results.length + ' links checked';
+  log('Complete. ' + broken + ' broken links found.');
+  renderExtMap(buildExtMap(results, currentBaseHost));
+  btn.disabled = false; btn.textContent = 'Check again'; running = false;
+}
+
+function exportCSV() {
+  const rows = [['URL', 'Status', 'Type', 'Redirects To', 'HTTP onveilig', 'Found On']];
+  results.forEach(r => rows.push([r.url, r.status, r.type, r.redirectsTo || '', r.url.startsWith('http://') ? 'Ja' : 'Nee', r.source]));
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'broken-links.csv'; a.click();
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startCheck(); });
+</script>
+</body>
+</html>
