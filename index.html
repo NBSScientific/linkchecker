@@ -170,7 +170,7 @@
     </ul>
     <div class="add-site-row">
       <input type="text" id="addSiteInput" placeholder="https://yourwebsite.com" />
-      <button class="btn btn-outline" onclick="addSite()">+ Add site</button>
+      <button class="btn btn-outline">+ Add site</button>
     </div>
   </div>
 
@@ -179,7 +179,7 @@
     <div class="section-label">Check a URL</div>
     <div class="input-row">
       <input type="text" id="urlInput" placeholder="https://yourwebsite.com" />
-      <button class="btn btn-primary" id="startBtn" onclick="startCheck()">Check links</button>
+      <button class="btn btn-primary" id="startBtn">Check links</button>
     </div>
     <div class="options">
       <label><input type="checkbox" id="extCheck" checked /> Include external links</label>
@@ -212,16 +212,16 @@
     <div class="results-header">
       <h2 id="resTitle">Results</h2>
       <div class="filter-row">
-        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
-        <button class="filter-btn" onclick="setFilter('broken',this)">Broken</button>
-        <button class="filter-btn" onclick="setFilter('ok',this)">Working</button>
-        <button class="filter-btn" onclick="setFilter('redirect',this)">Redirects</button>
-        <button class="filter-btn" onclick="setFilter('http',this)">HTTP (onveilig)</button>
+        <button class="filter-btn active">All</button>
+        <button class="filter-btn">Broken</button>
+        <button class="filter-btn">Working</button>
+        <button class="filter-btn">Redirects</button>
+        <button class="filter-btn">HTTP (onveilig)</button>
       </div>
     </div>
     <div class="results-list" id="resList"></div>
     <div class="export-row">
-      <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+      <button class="btn btn-outline">Export CSV</button>
     </div>
   </div>
 
@@ -234,13 +234,13 @@
     <p style="font-size:13px;color:#888;margin-bottom:14px">Links on your page that go to other websites, grouped by domain.</p>
     <div id="extMapList"></div>
     <div class="export-row">
-      <button class="btn btn-outline" onclick="exportExtCSV()">Export CSV</button>
+      <button class="btn btn-outline">Export CSV</button>
     </div>
   </div>
 
 </div>
 
-<script>
+<script type="module">
 // ── Sites manager ──────────────────────────────────────────
 let sites = JSON.parse(localStorage.getItem('lc_sites') || '[]');
 let results = [], filter = 'all', running = false;
@@ -255,8 +255,8 @@ function renderSites() {
   list.innerHTML = sites.map((s, i) => `
     <li class="site-item">
       <span class="site-url">${s}</span>
-      <button class="site-remove" onclick="useSite('${s}')" title="Use this URL">▶</button>
-      <button class="site-remove" onclick="removeSite(${i})" title="Remove">✕</button>
+      <button class="site-remove" title="Use this URL">▶</button>
+      <button class="site-remove" title="Remove">✕</button>
     </li>`).join('');
 }
 
@@ -363,7 +363,7 @@ function renderExtMap(map) {
   count.textContent = totalLinks + ' links to ' + domains.length + ' external domain' + (domains.length !== 1 ? 's' : '');
   list.innerHTML = domains.sort((a,b) => map[b].length - map[a].length).map(domain => `
     <div class="ext-domain">
-      <div class="ext-domain-header" onclick="toggleDomain(this)">
+      <div class="ext-domain-header">
         <span class="ext-domain-name">${domain}</span>
         <span class="ext-domain-count">${map[domain].length} link${map[domain].length !== 1 ? 's' : ''}</span>
       </div>
@@ -493,6 +493,15 @@ function exportCSV() {
 }
 
 document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') startCheck(); });
+document.getElementById('startBtn').addEventListener('click', startCheck);
+document.getElementById('addSiteInput').addEventListener('keydown', e => { if (e.key === 'Enter') addSite(); });
+document.querySelector('[onclick="addSite()"]').addEventListener('click', addSite);
+document.querySelector('[onclick="exportCSV()"]').addEventListener('click', exportCSV);
+document.querySelector('[onclick="exportExtCSV()"]').addEventListener('click', exportExtCSV);
+document.querySelectorAll('[onclick^="setFilter"]').forEach(btn => {
+  const match = btn.getAttribute('onclick').match(/setFilter\('(\w+)'/);
+  if (match) btn.addEventListener('click', () => setFilter(match[1], btn));
+});
 </script>
 </body>
 </html>
