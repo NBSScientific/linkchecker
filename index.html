@@ -397,6 +397,8 @@ function exportExtCSV() {
 }
 
 let currentBaseHost = '';
+
+async function checkLink(url, source) {
   try {
     const res = await fetch('/api/check', {
       method: 'POST',
@@ -500,8 +502,4 @@ document.querySelector('[onclick="exportCSV()"]').addEventListener('click', expo
 document.querySelector('[onclick="exportExtCSV()"]').addEventListener('click', exportExtCSV);
 document.querySelectorAll('[onclick^="setFilter"]').forEach(btn => {
   const match = btn.getAttribute('onclick').match(/setFilter\('(\w+)'/);
-  if (match) btn.addEventListener('click', () => setFilter(match[1], btn));
-});
-</script>
-</body>
-</html>
+  if (match) btn.addEventListener('click', () => setFilter(match[
