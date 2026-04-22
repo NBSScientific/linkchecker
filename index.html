@@ -413,15 +413,14 @@ async function checkLink(url, source) {
   }
 }
 
-async function fetchLinks(url, fullSite) {
+async function fetchLinksFromPage(url) {
   const res = await fetch('/api/scrape', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, fullSite })
+    body: JSON.stringify({ url })
   });
   const d = await res.json();
-  // Returns array of {url, source} objects
-  return { links: d.links || [], pagesVisited: d.pagesVisited || 1 };
+  return d.links || [];
 }
 
 async function startCheck() {
@@ -442,32 +441,56 @@ async function startCheck() {
   document.getElementById('resCard').style.display = 'block';
   document.getElementById('logEl').innerHTML = '';
   document.getElementById('resList').innerHTML = '<div class="empty">Scanning page...</div>';
-  document.getElementById('progFill').style.width = '5%';
+  document.getElementById('progFill').style.width = '2%';
   document.getElementById('progLbl').textContent = 'Fetching page...';
 
-  log('Fetching: ' + url);
+  log('Starting: ' + url);
 
-  let fetchResult;
-  try {
-    fetchResult = await fetchLinks(url, fullSite);
-  } catch(e) {
-    log('Could not fetch the page.');
-    document.getElementById('progLbl').textContent = 'Error fetching page.';
-    btn.disabled = false; btn.textContent = 'Check links'; running = false; return;
+  // Phase 1: Crawl pages and collect all links
+  const visited = new Set();
+  const toVisit = [url];
+  const allLinks = new Map(); // link url -> source page
+
+  if (fullSite) {
+    while (toVisit.length > 0) {
+      const current = toVisit.shift();
+      if (visited.has(current)) continue;
+      visited.add(current);
+      document.getElementById('progLbl').textContent = 'Crawling page ' + visited.size + ' (queue: ' + toVisit.length + ')...';
+      log('Crawling: ' + current.replace(/^https?:\/\//, '').substring(0, 60));
+      try {
+        const pageLinks = await fetchLinksFromPage(current);
+        for (const l of pageLinks) {
+          if (!allLinks.has(l)) allLinks.set(l, current);
+          try {
+            const linkHost = new URL(l).hostname;
+            if (linkHost === currentBaseHost && !visited.has(l) && !toVisit.includes(l)) {
+              toVisit.push(l);
+            }
+          } catch(e) {}
+        }
+      } catch(e) { log('Could not fetch: ' + current); }
+    }
+    log('Crawled ' + visited.size + ' pages, found ' + allLinks.size + ' unique links.');
+  } else {
+    try {
+      const pageLinks = await fetchLinksFromPage(url);
+      for (const l of pageLinks) allLinks.set(l, url);
+      log('Found ' + allLinks.size + ' links.');
+    } catch(e) {
+      log('Could not fetch the page.');
+      document.getElementById('progLbl').textContent = 'Error fetching page.';
+      btn.disabled = false; btn.textContent = 'Check links'; running = false; return;
+    }
   }
 
-  let links = fetchResult.links;
-  const pagesVisited = fetchResult.pagesVisited;
-  if (fullSite) log('Crawled ' + pagesVisited + ' pages, found ' + links.length + ' links.');
-  else log('Found ' + links.length + ' links to check.');
-
+  // Phase 2: Check all collected links
   const checkExt = document.getElementById('extCheck').checked;
+  let links = [...allLinks.entries()].map(([u, src]) => ({ url: u, source: src }));
   if (!checkExt) links = links.filter(l => { try { return new URL(l.url).hostname === currentBaseHost; } catch(e) { return false; } });
 
-  log('Found ' + links.length + ' links to check.');
-
   if (!links.length) {
-    document.getElementById('progLbl').textContent = 'No links found on this page.';
+    document.getElementById('progLbl').textContent = 'No links found.';
     document.getElementById('resList').innerHTML = '<div class="empty">No links found.</div>';
     btn.disabled = false; btn.textContent = 'Check links'; running = false; return;
   }
@@ -476,10 +499,9 @@ async function startCheck() {
 
   for (let i = 0; i < links.length; i++) {
     document.getElementById('progFill').style.width = Math.round(((i + 1) / links.length) * 100) + '%';
-    document.getElementById('progLbl').textContent = 'Checking ' + (i + 1) + ' of ' + links.length + '...';
-    const link = links[i];
-    log('Checking: ' + link.url.replace(/^https?:\/\//, '').substring(0, 70));
-    results.push(await checkLink(link.url, link.source));
+    document.getElementById('progLbl').textContent = 'Checking link ' + (i + 1) + ' of ' + links.length + '...';
+    log('Checking: ' + links[i].url.replace(/^https?:\/\//, '').substring(0, 70));
+    results.push(await checkLink(links[i].url, links[i].source));
     updateStats(); render();
   }
 
