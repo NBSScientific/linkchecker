@@ -264,15 +264,18 @@
   <!-- Search box -->
   <div class="card">
     <div class="section-label">Zoeken in website</div>
-    <div class="input-row" style="margin-bottom:8px">
+    <div class="input-row" style="margin-bottom:12px">
       <input type="text" id="searchUrl" placeholder="https://yourwebsite.com" />
     </div>
-    <div class="input-row">
-      <input type="text" id="searchQuery" placeholder="Zoekterm, bijv. oud telefoonnummer of URL..." />
-      <button class="btn btn-primary" id="searchBtn">Zoeken</button>
+    <div id="keywordFields">
+      <div class="keyword-row" style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" class="keyword-input" placeholder="Zoekwoord..." style="flex:1;height:38px;padding:0 12px;border:1px solid #ddd;border-radius:8px;font-size:14px" />
+        <button class="keyword-remove" style="height:38px;width:38px;border:1px solid #ddd;border-radius:8px;background:transparent;color:#ccc;font-size:18px;cursor:pointer;display:none">✕</button>
+      </div>
     </div>
-    <div class="options" style="margin-top:10px">
-      <span style="font-size:13px;color:#888">Zoekt door alle tekst op alle pagina's van de website.</span>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-outline" id="addKeywordBtn" style="font-size:13px;height:36px">+ Zoekwoord toevoegen</button>
+      <button class="btn btn-primary" id="searchBtn" style="margin-left:auto">Zoeken</button>
     </div>
   </div>
 
@@ -646,18 +649,25 @@ function searchLog(m) {
   el.scrollTop = el.scrollHeight;
 }
 
-function highlight(text, term) {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return text.replace(new RegExp(escaped, 'gi'), m => `<mark>${m}</mark>`);
+function highlight(text, terms) {
+  let result = text;
+  for (const term of terms) {
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    result = result.replace(new RegExp(escaped, 'gi'), m => `<mark>${m}</mark>`);
+  }
+  return result;
 }
 
 async function startSearch() {
   if (searching) return;
   let url = document.getElementById('searchUrl').value.trim();
-  const query = document.getElementById('searchQuery').value.trim();
   if (!url) { alert('Vul een website URL in.'); return; }
-  if (!query) { alert('Vul een zoekterm in.'); return; }
   if (!url.startsWith('http')) url = 'https://' + url;
+
+  // Read all keyword fields
+  const terms = [...document.querySelectorAll('.keyword-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  if (!terms.length) { alert('Vul minimaal één zoekwoord in.'); return; }
 
   searching = true;
   const btn = document.getElementById('searchBtn');
@@ -671,12 +681,12 @@ async function startSearch() {
   document.getElementById('searchResList').innerHTML = '<div class="empty">Zoeken...</div>';
   document.getElementById('searchResTitle').textContent = 'Zoekresultaten';
 
-  searchLog('Zoeken naar "' + query + '" op ' + url);
+  searchLog('Zoeken naar: ' + terms.map(t => '"' + t + '"').join(', ') + ' op ' + url);
 
   const baseHost = new URL(url).hostname;
   const visited = new Set();
   const toVisit = [url];
-  const searchResults = [];
+  const searchResults = []; // { page, termResults: { term -> matches[] } }
 
   while (toVisit.length > 0) {
     const current = toVisit.shift();
@@ -687,27 +697,38 @@ async function startSearch() {
     searchLog('Zoeken op: ' + current.replace(/^https?:\/\//, '').substring(0, 60));
 
     try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: current, query })
-      });
-      const data = await res.json();
+      // Search for all terms on this page in parallel
+      const responses = await Promise.all(terms.map(term =>
+        fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: current, query: term })
+        }).then(r => r.json())
+      ));
 
-      // Add internal links to queue
-      for (const l of (data.internalLinks || [])) {
+      // Add internal links from first response
+      for (const l of (responses[0].internalLinks || [])) {
         if (!visited.has(l) && !toVisit.includes(l)) toVisit.push(l);
       }
 
-      // Store matches
-      if (data.matches && data.matches.length > 0) {
-        searchResults.push({ page: current, matches: data.matches });
-        // Update results live
-        document.getElementById('searchResTitle').textContent = searchResults.length + ' pagina' + (searchResults.length !== 1 ? "'s" : '') + ' met "' + query + '"';
+      // Collect matches per term
+      const termResults = {};
+      let anyMatch = false;
+      for (let i = 0; i < terms.length; i++) {
+        const matches = responses[i].matches || [];
+        if (matches.length > 0) { termResults[terms[i]] = matches; anyMatch = true; }
+      }
+
+      if (anyMatch) {
+        searchResults.push({ page: current, termResults });
+        document.getElementById('searchResTitle').textContent = searchResults.length + ' pagina' + (searchResults.length !== 1 ? "'s" : '') + ' met resultaten';
         document.getElementById('searchResList').innerHTML = searchResults.map(r => `
           <div class="search-result">
             <div class="search-page"><a href="${r.page}" target="_blank" rel="noopener">${r.page}</a></div>
-            ${r.matches.map(m => `<div class="search-snippet">${highlight(m, query)}</div>`).join('')}
+            ${Object.entries(r.termResults).map(([term, matches]) => `
+              <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;margin:6px 0 4px">"${term}"</div>
+              ${matches.map(m => `<div class="search-snippet">${highlight(m, [term])}</div>`).join('')}
+            `).join('')}
           </div>`).join('');
       }
     } catch(e) {
@@ -716,18 +737,61 @@ async function startSearch() {
   }
 
   document.getElementById('searchProgFill').style.width = '100%';
-  document.getElementById('searchProgLbl').textContent = visited.size + " pagina's doorzocht — " + searchResults.length + " pagina's gevonden met \"" + query + '"';
-  searchLog('Klaar! ' + searchResults.length + ' pagina\'s gevonden.');
+  document.getElementById('searchProgLbl').textContent = visited.size + " pagina's doorzocht — " + searchResults.length + " pagina's gevonden";
+  searchLog('Klaar! ' + searchResults.length + " pagina's gevonden.");
 
   if (!searchResults.length) {
-    document.getElementById('searchResList').innerHTML = '<div class="empty">"' + query + '" niet gevonden op deze website.</div>';
+    document.getElementById('searchResList').innerHTML = '<div class="empty">Geen van de zoektermen gevonden op deze website.</div>';
   }
 
   btn.disabled = false; btn.textContent = 'Zoeken'; searching = false;
 }
 
+// ── Keyword fields ──────────────────────────────────────────
+function updateRemoveButtons() {
+  const rows = document.querySelectorAll('.keyword-row');
+  rows.forEach(row => {
+    const btn = row.querySelector('.keyword-remove');
+    btn.style.display = rows.length > 1 ? 'block' : 'none';
+  });
+}
+
+function addKeywordField(value = '') {
+  const container = document.getElementById('keywordFields');
+  const row = document.createElement('div');
+  row.className = 'keyword-row';
+  row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px';
+  row.innerHTML = `
+    <input type="text" class="keyword-input" placeholder="Zoekwoord..." value="${value}" style="flex:1;height:38px;padding:0 12px;border:1px solid #ddd;border-radius:8px;font-size:14px" />
+    <button class="keyword-remove" style="height:38px;width:38px;border:1px solid #ddd;border-radius:8px;background:transparent;color:#ccc;font-size:18px;cursor:pointer">✕</button>
+  `;
+  row.querySelector('.keyword-remove').addEventListener('click', () => {
+    row.remove();
+    updateRemoveButtons();
+  });
+  row.querySelector('.keyword-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { addKeywordField(); updateRemoveButtons(); }
+  });
+  container.appendChild(row);
+  updateRemoveButtons();
+  row.querySelector('.keyword-input').focus();
+}
+
+document.getElementById('addKeywordBtn').addEventListener('click', () => {
+  addKeywordField();
+});
+
 document.getElementById('searchBtn').addEventListener('click', startSearch);
-document.getElementById('searchQuery').addEventListener('keydown', e => { if (e.key === 'Enter') startSearch(); });
+
+// Init first row remove button listener
+document.querySelector('.keyword-remove').addEventListener('click', function() {
+  this.closest('.keyword-row').remove();
+  updateRemoveButtons();
+});
+document.querySelector('.keyword-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { addKeywordField(); }
+});
+updateRemoveButtons();
 </script>
 </body>
 </html>
