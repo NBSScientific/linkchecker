@@ -664,41 +664,63 @@ async function startSearch() {
   btn.disabled = true; btn.textContent = 'Zoeken...';
 
   document.getElementById('searchProgCard').style.display = 'block';
-  document.getElementById('searchResCard').style.display = 'none';
+  document.getElementById('searchResCard').style.display = 'block';
   document.getElementById('searchLogEl').innerHTML = '';
-  document.getElementById('searchProgFill').style.width = '5%';
+  document.getElementById('searchProgFill').style.width = '2%';
   document.getElementById('searchProgLbl').textContent = 'Website doorzoeken...';
+  document.getElementById('searchResList').innerHTML = '<div class="empty">Zoeken...</div>';
+  document.getElementById('searchResTitle').textContent = 'Zoekresultaten';
 
   searchLog('Zoeken naar "' + query + '" op ' + url);
 
-  try {
-    const res = await fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, query })
-    });
-    const data = await res.json();
+  const baseHost = new URL(url).hostname;
+  const visited = new Set();
+  const toVisit = [url];
+  const searchResults = [];
 
-    document.getElementById('searchProgFill').style.width = '100%';
-    document.getElementById('searchProgLbl').textContent = data.pagesSearched + ' pagina\'s doorzocht — ' + data.results.length + ' pagina\'s met resultaten.';
-    searchLog('Klaar! ' + data.results.length + ' pagina\'s gevonden met "' + query + '".');
+  while (toVisit.length > 0) {
+    const current = toVisit.shift();
+    if (visited.has(current)) continue;
+    visited.add(current);
 
-    document.getElementById('searchResCard').style.display = 'block';
-    document.getElementById('searchResTitle').textContent = data.results.length + ' pagina' + (data.results.length !== 1 ? "'s" : '') + ' met "' + query + '"';
+    document.getElementById('searchProgLbl').textContent = 'Pagina ' + visited.size + ' doorzoeken (wachtrij: ' + toVisit.length + ')...';
+    searchLog('Zoeken op: ' + current.replace(/^https?:\/\//, '').substring(0, 60));
 
-    const list = document.getElementById('searchResList');
-    if (!data.results.length) {
-      list.innerHTML = '<div class="empty">"' + query + '" niet gevonden op deze website.</div>';
-    } else {
-      list.innerHTML = data.results.map(r => `
-        <div class="search-result">
-          <div class="search-page"><a href="${r.page}" target="_blank" rel="noopener">${r.page}</a></div>
-          ${r.matches.map(m => `<div class="search-snippet">${highlight(m.snippet, query)}</div>`).join('')}
-        </div>`).join('');
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: current, query })
+      });
+      const data = await res.json();
+
+      // Add internal links to queue
+      for (const l of (data.internalLinks || [])) {
+        if (!visited.has(l) && !toVisit.includes(l)) toVisit.push(l);
+      }
+
+      // Store matches
+      if (data.matches && data.matches.length > 0) {
+        searchResults.push({ page: current, matches: data.matches });
+        // Update results live
+        document.getElementById('searchResTitle').textContent = searchResults.length + ' pagina' + (searchResults.length !== 1 ? "'s" : '') + ' met "' + query + '"';
+        document.getElementById('searchResList').innerHTML = searchResults.map(r => `
+          <div class="search-result">
+            <div class="search-page"><a href="${r.page}" target="_blank" rel="noopener">${r.page}</a></div>
+            ${r.matches.map(m => `<div class="search-snippet">${highlight(m, query)}</div>`).join('')}
+          </div>`).join('');
+      }
+    } catch(e) {
+      searchLog('Fout op: ' + current);
     }
-  } catch(e) {
-    searchLog('Fout: ' + e.message);
-    document.getElementById('searchProgLbl').textContent = 'Er ging iets mis.';
+  }
+
+  document.getElementById('searchProgFill').style.width = '100%';
+  document.getElementById('searchProgLbl').textContent = visited.size + " pagina's doorzocht — " + searchResults.length + " pagina's gevonden met \"" + query + '"';
+  searchLog('Klaar! ' + searchResults.length + ' pagina\'s gevonden.');
+
+  if (!searchResults.length) {
+    document.getElementById('searchResList').innerHTML = '<div class="empty">"' + query + '" niet gevonden op deze website.</div>';
   }
 
   btn.disabled = false; btn.textContent = 'Zoeken'; searching = false;
