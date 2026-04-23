@@ -4,6 +4,22 @@ export default async function handler(req, res) {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'URL required' });
 
+  // Patterns to skip — WordPress noise and non-page URLs
+  const skipPatterns = [
+    /\/feed\//,
+    /\/feed$/,
+    /\?/,              // skip ALL urls with query parameters (?p=, ?page_id=, ?s=, etc.)
+    /\/wp-json\//,
+    /\/wp-admin\//,
+    /\/wp-content\//,
+    /\/xmlrpc\.php/,
+    /\/wp-login\.php/,
+  ];
+
+  function shouldSkip(url) {
+    return skipPatterns.some(p => p.test(url));
+  }
+
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkChecker/1.0)', 'Accept': 'text/html' },
@@ -21,7 +37,9 @@ export default async function handler(req, res) {
         const href = m[1].trim();
         if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) continue;
         const abs = new URL(href, base).href;
-        if (abs.startsWith('http')) links.add(abs);
+        if (!abs.startsWith('http')) continue;
+        if (shouldSkip(abs)) continue;
+        links.add(abs);
       } catch(e) {}
     }
 
@@ -30,5 +48,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: e.message, links: [] });
   }
 }
-
-
