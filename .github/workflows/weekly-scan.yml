@@ -1,0 +1,26 @@
+name: Weekly Link Scan
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'  # Every Monday at 7:00 AM UTC
+  workflow_dispatch:       # Allow manual trigger via GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run link scanner and send email
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SITES: ${{ secrets.SITES }}
+        run: node scanner.js
