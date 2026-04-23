@@ -16,7 +16,7 @@ export default async function handler(req, res) {
       .trim();
   }
 
-  function getContext(text, term, contextLen = 120) {
+  function getMatches(text, term, contextLen = 120) {
     const lower = text.toLowerCase();
     const termLower = term.toLowerCase();
     const matches = [];
@@ -25,21 +25,21 @@ export default async function handler(req, res) {
       const start = Math.max(0, idx - contextLen);
       const end = Math.min(text.length, idx + term.length + contextLen);
       const snippet = (start > 0 ? '...' : '') + text.slice(start, end) + (end < text.length ? '...' : '');
-      matches.push({ snippet, position: idx });
+      matches.push(snippet);
       idx += term.length;
-      if (matches.length >= 5) break; // max 5 matches per page
+      if (matches.length >= 3) break;
     }
     return matches;
   }
 
-  function extractLinks(html, base) {
+  function extractLinks(html, base, baseHost) {
     const links = new Set();
     for (const m of [...html.matchAll(/href=["']([^"']+)["']/gi)]) {
       try {
         const href = m[1].trim();
         if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) continue;
         const abs = new URL(href, base).href;
-        if (abs.startsWith('http') && !shouldSkip(abs)) links.add(abs);
+        if (abs.startsWith('http') && !shouldSkip(abs) && new URL(abs).hostname === baseHost) links.add(abs);
       } catch(e) {}
     }
     return [...links];
@@ -47,55 +47,19 @@ export default async function handler(req, res) {
 
   try {
     const baseHost = new URL(url).hostname;
-    const visited = new Set();
-    const toVisit = [url];
-    const results = [];
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkChecker/1.0)', 'Accept': 'text/html' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000)
+    });
+    const html = await response.text();
+    const text = extractText(html);
+    const matches = getMatches(text, query);
+    const internalLinks = extractLinks(html, url, baseHost);
 
-    while (toVisit.length > 0) {
-      const current = toVisit.shift();
-      if (visited.has(current)) continue;
-      visited.add(current);
-
-      try {
-        const response = await fetch(current, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkChecker/1.0)', 'Accept': 'text/html' },
-          redirect: 'follow',
-          signal: AbortSignal.timeout(10000)
-        });
-        const html = await response.text();
-
-        // Find internal links to crawl
-        const pageLinks = extractLinks(html, current);
-        for (const l of pageLinks) {
-          try {
-            if (new URL(l).hostname === baseHost && !visited.has(l) && !toVisit.includes(l)) {
-              toVisit.push(l);
-            }
-          } catch(e) {}
-        }
-
-        // Search in page text
-        const text = extractText(html);
-        const matches = getContext(text, query);
-        if (matches.length > 0) {
-          results.push({ page: current, matches });
-        }
-
-        // Also search in raw HTML for URLs/links
-        const queryLower = query.toLowerCase();
-        const htmlLower = html.toLowerCase();
-        if (htmlLower.includes(queryLower) && matches.length === 0) {
-          // Found in HTML but not visible text — could be in a link or attribute
-          const linkMatches = getContext(html.replace(/<[^>]+>/g, ' '), query);
-          if (linkMatches.length > 0) {
-            results.push({ page: current, matches: linkMatches, inHtml: true });
-          }
-        }
-      } catch(e) {}
-    }
-
-    res.status(200).json({ results, pagesSearched: visited.size });
+    res.status(200).json({ matches, internalLinks });
   } catch(e) {
-    res.status(500).json({ error: e.message, results: [] });
+    res.status(500).json({ error: e.message, matches: [], internalLinks: [] });
   }
 }
+
