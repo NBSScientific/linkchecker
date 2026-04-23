@@ -165,6 +165,7 @@
   <!-- My Sites -->
   <div class="card">
     <div class="section-label">My websites</div>
+    <p style="font-size:13px;color:#888;margin-bottom:12px">Sites marked with 📅 are included in the weekly email report.</p>
     <ul class="sites-list" id="sitesList">
       <li class="empty" id="sitesEmpty" style="padding:1rem 0;text-align:left">No sites saved yet. Add your websites below.</li>
     </ul>
@@ -243,10 +244,21 @@
 
 <script type="module">
 // ── Sites manager ──────────────────────────────────────────
-let sites = JSON.parse(localStorage.getItem('lc_sites') || '[]');
+const DEFAULT_SITES = [
+  'https://nbsscientific.nl', 'https://nbsscientific.be', 'https://nbsscientific.fr',
+  'https://nbsscientific.de', 'https://nbsscientific.ch', 'https://nbsscientific.es',
+  'https://nbsscientific.co.uk', 'https://nbsscientific.com', 'https://nbsscientific.at'
+];
+
+// sites = array of { url, weekly }
+let sites = JSON.parse(localStorage.getItem('lc_sites_v2') || 'null');
+if (!sites) {
+  sites = DEFAULT_SITES.map(url => ({ url, weekly: true }));
+  localStorage.setItem('lc_sites_v2', JSON.stringify(sites));
+}
 let results = [], filter = 'all', running = false;
 
-function saveSites() { localStorage.setItem('lc_sites', JSON.stringify(sites)); }
+function saveSites() { localStorage.setItem('lc_sites_v2', JSON.stringify(sites)); }
 
 function renderSites() {
   const list = document.getElementById('sitesList');
@@ -254,18 +266,29 @@ function renderSites() {
   if (!sites.length) { empty.style.display = 'block'; list.innerHTML = ''; list.appendChild(empty); return; }
   empty.style.display = 'none';
   list.innerHTML = sites.map((s, i) => `
-    <li class="site-item">
-      <span class="site-url">${s}</span>
-      <button class="site-remove" title="Use this URL">▶</button>
-      <button class="site-remove" title="Remove">✕</button>
+    <li class="site-item" data-i="${i}">
+      <span class="site-url">${s.url}</span>
+      <span title="Include in weekly report" style="cursor:pointer;font-size:16px;opacity:${s.weekly?1:0.3}" data-weekly="${i}">${s.weekly ? '📅' : '📅'}</span>
+      <button class="site-remove" style="color:#1a5fa8;font-size:14px" data-use="${i}" title="Use this URL">▶</button>
+      <button class="site-remove" data-remove="${i}" title="Remove">✕</button>
     </li>`).join('');
+
+  list.querySelectorAll('[data-weekly]').forEach(el => {
+    el.addEventListener('click', () => { const i = +el.dataset.weekly; sites[i].weekly = !sites[i].weekly; saveSites(); renderSites(); });
+  });
+  list.querySelectorAll('[data-use]').forEach(el => {
+    el.addEventListener('click', () => useSite(sites[+el.dataset.use].url));
+  });
+  list.querySelectorAll('[data-remove]').forEach(el => {
+    el.addEventListener('click', () => { sites.splice(+el.dataset.remove, 1); saveSites(); renderSites(); });
+  });
 }
 
 function addSite() {
   let val = document.getElementById('addSiteInput').value.trim();
   if (!val) return;
   if (!val.startsWith('http')) val = 'https://' + val;
-  if (!sites.includes(val)) { sites.push(val); saveSites(); renderSites(); }
+  if (!sites.find(s => s.url === val)) { sites.push({ url: val, weekly: true }); saveSites(); renderSites(); }
   document.getElementById('addSiteInput').value = '';
 }
 
