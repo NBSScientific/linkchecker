@@ -104,82 +104,141 @@ async function scanSite(siteUrl) {
 function buildEmailHtml(siteResults) {
   const date = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
   const totalBroken = siteResults.reduce((s, r) => s + r.results.filter(l => l.type === 'broken').length, 0);
+  const totalRedirects = siteResults.reduce((s, r) => s + r.results.filter(l => l.type === 'redirect').length, 0);
+  const totalInsecure = siteResults.reduce((s, r) => s + r.results.filter(l => l.url.startsWith('http://')).length, 0);
+  const totalOk = siteResults.reduce((s, r) => s + r.results.filter(l => l.type === 'ok').length, 0);
+  const toolUrl = 'https://linkchecker-2a6f.vercel.app';
 
-  const siteSections = siteResults.map(({ site, pagesVisited, results }) => {
+  function makeTable(rows, headers) {
+    if (!rows.length) return '';
+    const headerCells = headers.map(h => `<th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500;background:#f9f9f7">${h}</th>`).join('');
+    return `<table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <tr>${headerCells}</tr>${rows.join('')}
+    </table>`;
+  }
+
+  const siteSections = siteResults.map(({ site, pagesVisited, results }, idx) => {
     const broken = results.filter(r => r.type === 'broken');
     const redirects = results.filter(r => r.type === 'redirect');
     const insecure = results.filter(r => r.url.startsWith('http://'));
+    const ok = results.filter(r => r.type === 'ok');
     const statusColor = broken.length > 0 ? '#c0392b' : '#1a7a4a';
-    const statusText = broken.length > 0 ? `${broken.length} broken link${broken.length !== 1 ? 's' : ''} gevonden` : 'Alle links OK ✓';
+    const statusText = broken.length > 0 ? `⚠️ ${broken.length} broken` : '✓ Alles OK';
+    const siteId = `site-${idx}`;
 
-    const brokenRows = broken.map(r => `
-      <tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;word-break:break-all">${r.url}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#c0392b;white-space:nowrap">${r.status}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#888;word-break:break-all">${r.source}</td>
-      </tr>`).join('');
+    // Navigation anchors
+    const navLinks = [
+      broken.length > 0 ? `<a href="#${siteId}-broken" style="display:inline-block;padding:5px 12px;background:#fde8e8;color:#c0392b;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🔴 ${broken.length} Broken</a>` : '',
+      redirects.length > 0 ? `<a href="#${siteId}-redirects" style="display:inline-block;padding:5px 12px;background:#d1ecf1;color:#1a5fa8;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🔵 ${redirects.length} Redirects</a>` : '',
+      insecure.length > 0 ? `<a href="#${siteId}-http" style="display:inline-block;padding:5px 12px;background:#fff3cd;color:#856404;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🟡 ${insecure.length} HTTP</a>` : '',
+      ok.length > 0 ? `<a href="#${siteId}-ok" style="display:inline-block;padding:5px 12px;background:#d4edda;color:#1a7a4a;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🟢 ${ok.length} Werkend</a>` : '',
+    ].filter(Boolean).join('');
 
-    const redirectRows = redirects.slice(0, 10).map(r => `
-      <tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;word-break:break-all">${r.url}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#1a5fa8;white-space:nowrap">${r.status}</td>
-        <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#888;word-break:break-all">${r.redirectsTo}</td>
-      </tr>`).join('');
+    const brokenRows = broken.map(r => `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;word-break:break-all"><a href="${r.url}" style="color:#1a1a1a">${r.url}</a></td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#c0392b;white-space:nowrap">${r.status}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#888;word-break:break-all">${r.source}</td>
+    </tr>`);
+
+    const redirectRows = redirects.slice(0, 20).map(r => `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;word-break:break-all"><a href="${r.url}" style="color:#1a1a1a">${r.url}</a></td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#1a5fa8;white-space:nowrap">${r.status}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#888;word-break:break-all">${r.redirectsTo || ''}</td>
+    </tr>`);
+
+    const insecureRows = insecure.slice(0, 20).map(r => `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;word-break:break-all"><a href="${r.url}" style="color:#1a1a1a">${r.url}</a></td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#888;word-break:break-all">${r.source}</td>
+    </tr>`);
+
+    const okRows = ok.slice(0, 10).map(r => `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;word-break:break-all"><a href="${r.url}" style="color:#1a7a4a">${r.url}</a></td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;color:#888;word-break:break-all">${r.source}</td>
+    </tr>`);
 
     return `
-    <div style="background:#fff;border-radius:10px;border:1px solid #e5e5e5;margin-bottom:24px;overflow:hidden">
+    <div id="${siteId}" style="background:#fff;border-radius:10px;border:1px solid #e5e5e5;margin-bottom:32px;overflow:hidden">
+
+      <!-- Header -->
       <div style="padding:16px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa">
-        <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-size:16px;font-weight:600;color:#1a1a1a">${site}</div>
-            <div style="font-size:13px;color:#888;margin-top:2px">${pagesVisited} pagina's gecrawld · ${results.length} links gecheckt</div>
+            <div style="font-size:12px;color:#888;margin-top:2px">${pagesVisited} pagina's gecrawld · ${results.length} links gecheckt</div>
           </div>
           <div style="font-size:13px;font-weight:600;color:${statusColor}">${statusText}</div>
         </div>
       </div>
-      <div style="padding:12px 20px;background:#f9f9f7;display:flex;gap:24px;flex-wrap:wrap">
-        <div><div style="font-size:22px;font-weight:700;color:#1a1a1a">${results.length}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Totaal</div></div>
-        <div><div style="font-size:22px;font-weight:700;color:#1a7a4a">${results.filter(r=>r.type==='ok').length}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Werkend</div></div>
-        <div><div style="font-size:22px;font-weight:700;color:#c0392b">${broken.length}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Broken</div></div>
-        <div><div style="font-size:22px;font-weight:700;color:#1a5fa8">${redirects.length}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Redirects</div></div>
-        <div><div style="font-size:22px;font-weight:700;color:#b45309">${insecure.length}</div><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">HTTP</div></div>
+
+      <!-- Stats -->
+      <div style="padding:12px 20px;background:#f9f9f7;display:flex;gap:20px;flex-wrap:wrap;border-bottom:1px solid #eee">
+        <div><div style="font-size:20px;font-weight:700;color:#1a1a1a">${results.length}</div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em">Totaal</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:#1a7a4a">${ok.length}</div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em">Werkend</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:#c0392b">${broken.length}</div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em">Broken</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:#1a5fa8">${redirects.length}</div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em">Redirects</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:#b45309">${insecure.length}</div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em">HTTP</div></div>
       </div>
+
+      <!-- Category navigation -->
+      ${navLinks ? `<div style="padding:12px 20px;border-bottom:1px solid #eee;background:#fff">${navLinks}</div>` : ''}
+
+      <!-- Broken links -->
       ${broken.length > 0 ? `
-      <div style="padding:16px 20px 8px">
-        <div style="font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Broken links</div>
-        <table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px;overflow:hidden">
-          <tr style="background:#f9f9f7">
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500">URL</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500">Status</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500">Gevonden op</th>
-          </tr>
-          ${brokenRows}
-        </table>
+      <div id="${siteId}-broken" style="padding:16px 20px 12px">
+        <div style="font-size:13px;font-weight:600;color:#c0392b;margin-bottom:10px">🔴 Broken links (${broken.length})</div>
+        ${makeTable(brokenRows, ['URL', 'Status', 'Gevonden op'])}
       </div>` : ''}
+
+      <!-- Redirects -->
       ${redirects.length > 0 ? `
-      <div style="padding:16px 20px 8px">
-        <div style="font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Redirects${redirects.length > 10 ? ` (top 10 van ${redirects.length})` : ''}</div>
-        <table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px;overflow:hidden">
-          <tr style="background:#f9f9f7">
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500">URL</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500">Status</th>
-            <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;font-weight:500">Redirect naar</th>
-          </tr>
-          ${redirectRows}
-        </table>
+      <div id="${siteId}-redirects" style="padding:16px 20px 12px;border-top:1px solid #f0f0f0">
+        <div style="font-size:13px;font-weight:600;color:#1a5fa8;margin-bottom:10px">🔵 Redirects (${redirects.length}${redirects.length > 20 ? ', top 20 getoond' : ''})</div>
+        ${makeTable(redirectRows, ['URL', 'Status', 'Redirect naar'])}
       </div>` : ''}
+
+      <!-- HTTP insecure -->
+      ${insecure.length > 0 ? `
+      <div id="${siteId}-http" style="padding:16px 20px 12px;border-top:1px solid #f0f0f0">
+        <div style="font-size:13px;font-weight:600;color:#856404;margin-bottom:10px">🟡 HTTP (onveilig) (${insecure.length}${insecure.length > 20 ? ', top 20 getoond' : ''})</div>
+        ${makeTable(insecureRows, ['URL', 'Gevonden op'])}
+      </div>` : ''}
+
+      <!-- Working links (collapsed, top 10 only) -->
+      ${ok.length > 0 ? `
+      <div id="${siteId}-ok" style="padding:16px 20px 12px;border-top:1px solid #f0f0f0">
+        <div style="font-size:13px;font-weight:600;color:#1a7a4a;margin-bottom:10px">🟢 Werkende links (${ok.length}${ok.length > 10 ? ', top 10 getoond' : ''})</div>
+        ${makeTable(okRows, ['URL', 'Gevonden op'])}
+        ${ok.length > 10 ? `<p style="font-size:12px;color:#888;margin:4px 0 0">+ ${ok.length - 10} meer werkende links — <a href="${toolUrl}" style="color:#1a5fa8">bekijk alle resultaten in de tool</a></p>` : ''}
+      </div>` : ''}
+
     </div>`;
   }).join('');
 
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
   <div style="max-width:720px;margin:0 auto;padding:32px 16px">
+
+    <!-- Header -->
     <div style="margin-bottom:24px">
       <h1 style="font-size:24px;font-weight:700;color:#1a1a1a;margin:0 0 4px">Wekelijks Link Rapport</h1>
-      <p style="font-size:14px;color:#888;margin:0">${date} · ${siteResults.length} websites gescand · ${totalBroken} broken links gevonden</p>
+      <p style="font-size:14px;color:#888;margin:0 0 16px">${date} · ${siteResults.length} websites gescand</p>
+
+      <!-- Overall summary badges -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <span style="display:inline-block;padding:6px 14px;background:#fde8e8;color:#c0392b;border-radius:20px;font-size:13px;font-weight:600">🔴 ${totalBroken} Broken</span>
+        <span style="display:inline-block;padding:6px 14px;background:#d1ecf1;color:#1a5fa8;border-radius:20px;font-size:13px;font-weight:600">🔵 ${totalRedirects} Redirects</span>
+        <span style="display:inline-block;padding:6px 14px;background:#fff3cd;color:#856404;border-radius:20px;font-size:13px;font-weight:600">🟡 ${totalInsecure} HTTP</span>
+        <span style="display:inline-block;padding:6px 14px;background:#d4edda;color:#1a7a4a;border-radius:20px;font-size:13px;font-weight:600">🟢 ${totalOk} Werkend</span>
+      </div>
+
+      <!-- Button to tool -->
+      <a href="${toolUrl}" style="display:inline-block;padding:10px 20px;background:#1a1a1a;color:#fff;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none">Bekijk volledige resultaten in de tool →</a>
     </div>
+
     ${siteSections}
+
     <div style="text-align:center;font-size:12px;color:#aaa;margin-top:24px;padding-top:16px;border-top:1px solid #e5e5e5">
-      Automatisch verzonden door uw Link Checker tool
+      Automatisch verzonden door uw <a href="${toolUrl}" style="color:#aaa">Link Checker tool</a>
     </div>
   </div>
 </body></html>`;
