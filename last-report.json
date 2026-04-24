@@ -1,5 +1,5 @@
 {
-  "date": "2026-04-24T12:25:39.501Z",
+  "date": "2026-04-24T12:52:15.971Z",
   "source": "manual",
   "siteResults": [
     {
@@ -537,6 +537,504 @@
           "type": "ok",
           "status": "200",
           "redirectsTo": null
+        }
+      ]
+    },
+    {
+      "site": "https://nbsscientific.nl",
+      "pagesVisited": 0,
+      "date": "2026-04-24T12:52:15.971Z",
+      "source": "manual",
+      "results": [
+        {
+          "url": "https://nbsscientific.nl/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/en/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/duurzaamheid/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/events/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/resources/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/faq/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/exclusieve-deals/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/vacatures/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/contact/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/mijn-account/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/over-nbsscientific/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/service-support/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/merken/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/producten/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-collectie/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-collectie/novitain-capping-systeem/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-collectie/gentegra-stabilisatie-producten/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/maak-een-account-aan/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/vloeistof-verwerking/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/vloeistof-verwerking/pipetten/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/vloeistof-verwerking/pipetpunten/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/vloeistof-verwerking/vacuumpompen/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-voorbereiding/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-voorbereiding/rna-dna-zuivering/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-voorbereiding/ontdooistation/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-voorbereiding/benchtop-apparatuur/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-analyse/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-analyse/deepwell-platen/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-analyse/glazen-buizen/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-analyse/qpcr-products/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-management/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-management/code-scanners/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-management/tube-handlers/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-management/laser-markers/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/duurzame-sample-opslag/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/sample-opslag-buizen/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/sample-opslag-doppen/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/sample-opslag-rekken/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/starter-pakketten/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/tube-trial-pakketten/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/sample-opslag/cappers-decappers/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/media-bereiding/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/dose-it/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/mediaclave/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/mediajet/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/capp-petri-dishes/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/celkweek/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/cellspin/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/cellroll/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/celline/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/cases/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/nieuws/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/micronic-x-clear-tubes/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/catalogus/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/afys3g-sigma-str-single-tube-capper/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/pipetboy-pro/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/micronic-efc-refill-rack/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/blog/2026/04/09/de-visie-van-onze-ceo-op-groei-en-impact-in-life-sciences/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/blog/category/insights/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/blog/2025/09/26/nbsscientific-en-orca-voor-een-duurzamere-toekomst/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/blog/category/duurzaamheid/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/blog/2025/08/08/zomer-in-het-lab-5-tips-om-efficient-en-veilig-te-werken-tijdens-warme-dagen/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/nieuws",
+          "source": "https://nbsscientific.nl",
+          "type": "redirect",
+          "status": "301",
+          "redirectsTo": "https://nbsscientific.nl/nieuws/"
+        },
+        {
+          "url": "https://goo.gl/maps/gqGGZvopnfq",
+          "source": "https://nbsscientific.nl",
+          "type": "redirect",
+          "status": "302",
+          "redirectsTo": "https://www.google.com/maps/place/Meerpaalweg+6,+1332+BB+Almere/@52.4084866,5.2526491,17z/data=!3m1!4b1!4m5!3m4!1s0x47c617838d6e32db:0x59cec3b94b2bfd0!8m2!3d52.4084866!4d5.2548378?ved=2ahUKEwixgYn724bgAhXBKFAKHYaTDzQQ8gEwAHoECAMQAQ&shorturl=1"
+        },
+        {
+          "url": "https://nbsscientific.nl/resources/iso-9001-certificering/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/resources/iso-14001-certificering/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://www.linkedin.com/company/nbs-scientific-nl/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/privacy-statement/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/privacy-statement-nl/",
+          "source": "https://nbsscientific.nl",
+          "type": "redirect",
+          "status": "301",
+          "redirectsTo": "https://nbsscientific.nl/privacy-statement/"
         }
       ]
     }
