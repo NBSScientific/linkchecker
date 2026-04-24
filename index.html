@@ -610,6 +610,26 @@ async function startCheck() {
   document.getElementById('resTitle').textContent = 'Results — ' + results.length + ' links checked';
   log('Complete. ' + broken + ' broken links found.');
   renderExtMap(buildExtMap(results, currentBaseHost));
+
+  // Save to last report
+  try {
+    const reportPayload = {
+      date: new Date().toISOString(),
+      source: 'manual',
+      siteResults: [{
+        site: url,
+        pagesVisited: visited.size,
+        results: results.map(r => ({ url: r.url, source: r.source, type: r.type, status: r.status, redirectsTo: r.redirectsTo || null }))
+      }]
+    };
+    await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportPayload)
+    });
+    log('Resultaten opgeslagen in "Laatste rapport".');
+  } catch(e) {}
+
   btn.disabled = false; btn.textContent = 'Check again'; running = false;
 }
 
@@ -822,7 +842,8 @@ async function loadReport() {
     const date = new Date(data.report.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const total = data.report.siteResults.reduce((s, r) => s + r.results.length, 0);
     const broken = data.report.siteResults.reduce((s, r) => s + r.results.filter(l => l.type === 'broken').length, 0);
-    document.getElementById('reportMeta').textContent = `Laatste scan: ${date} · ${data.report.siteResults.length} websites · ${total} links · ${broken} broken`;
+    const source = data.report.source === 'manual' ? '🖐 Handmatige scan' : '🤖 Automatische scan';
+    document.getElementById('reportMeta').textContent = `${source} · ${date} · ${data.report.siteResults.length} website${data.report.siteResults.length !== 1 ? 's' : ''} · ${total} links · ${broken} broken`;
 
     // Build domain filter buttons
     const domainRow = document.getElementById('reportDomainRow');
@@ -924,4 +945,3 @@ updateRemoveButtons();
 </script>
 </body>
 </html>
-
