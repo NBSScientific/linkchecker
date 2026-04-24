@@ -3,6 +3,8 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SITES = (process.env.SITES || '').split(',').map(s => s.trim()).filter(Boolean);
 const TO_EMAILS = ['ni@nbsscientific.com', 'dn@nbsscientific.com'];
+const TOOL_URL = process.env.TOOL_URL || 'https://linkchecker-2a6f.vercel.app';
+const VERCEL_API = process.env.VERCEL_TOOL_URL || TOOL_URL;
 
 const SKIP = [
   /\/feed\//,
@@ -126,12 +128,12 @@ function buildEmailHtml(siteResults) {
     const statusText = broken.length > 0 ? `⚠️ ${broken.length} broken` : '✓ Alles OK';
     const siteId = `site-${idx}`;
 
-    // Navigation anchors
+    // Navigation buttons — link to tool
     const navLinks = [
-      broken.length > 0 ? `<a href="#${siteId}-broken" style="display:inline-block;padding:5px 12px;background:#fde8e8;color:#c0392b;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🔴 ${broken.length} Broken</a>` : '',
-      redirects.length > 0 ? `<a href="#${siteId}-redirects" style="display:inline-block;padding:5px 12px;background:#d1ecf1;color:#1a5fa8;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🔵 ${redirects.length} Redirects</a>` : '',
-      insecure.length > 0 ? `<a href="#${siteId}-http" style="display:inline-block;padding:5px 12px;background:#fff3cd;color:#856404;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🟡 ${insecure.length} HTTP</a>` : '',
-      ok.length > 0 ? `<a href="#${siteId}-ok" style="display:inline-block;padding:5px 12px;background:#d4edda;color:#1a7a4a;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🟢 ${ok.length} Werkend</a>` : '',
+      broken.length > 0 ? `<a href="${TOOL_URL}#broken" style="display:inline-block;padding:5px 12px;background:#fde8e8;color:#c0392b;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🔴 ${broken.length} Broken</a>` : '',
+      redirects.length > 0 ? `<a href="${TOOL_URL}#redirects" style="display:inline-block;padding:5px 12px;background:#d1ecf1;color:#1a5fa8;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🔵 ${redirects.length} Redirects</a>` : '',
+      insecure.length > 0 ? `<a href="${TOOL_URL}#http" style="display:inline-block;padding:5px 12px;background:#fff3cd;color:#856404;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🟡 ${insecure.length} HTTP</a>` : '',
+      ok.length > 0 ? `<a href="${TOOL_URL}#ok" style="display:inline-block;padding:5px 12px;background:#d4edda;color:#1a7a4a;border-radius:20px;font-size:12px;font-weight:500;text-decoration:none;margin:2px">🟢 ${ok.length} Werkend</a>` : '',
     ].filter(Boolean).join('');
 
     const brokenRows = broken.map(r => `<tr>
@@ -257,7 +259,29 @@ async function main() {
     siteResults.push({ site, pagesVisited, results });
   }
 
-  console.log('\nAll sites scanned. Sending email...');
+  console.log('\nAll sites scanned. Saving report...');
+
+  // Save report to tool via API
+  try {
+    const reportPayload = {
+      date: new Date().toISOString(),
+      siteResults: siteResults.map(({ site, pagesVisited, results }) => ({
+        site, pagesVisited,
+        results: results.map(r => ({ url: r.url, source: r.source, type: r.type, status: r.status, redirectsTo: r.redirectsTo || null }))
+      }))
+    };
+    const saveRes = await fetch(`${TOOL_URL}/api/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reportPayload)
+    });
+    if (saveRes.ok) console.log('Report saved successfully.');
+    else console.log('Could not save report:', await saveRes.text());
+  } catch(e) {
+    console.log('Could not save report:', e.message);
+  }
+
+  console.log('Sending email...');
 
   const totalBroken = siteResults.reduce((s, r) => s + r.results.filter(l => l.type === 'broken').length, 0);
   const subject = `Wekelijks Link Rapport — ${totalBroken} broken link${totalBroken !== 1 ? 's' : ''} gevonden`;
