@@ -208,7 +208,7 @@ async function main() {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'Link Checker <onboarding@resend.dev>',
+      from: 'Link Checker <noreply@nbsscientific.com>',
       to: TO_EMAILS,
       subject,
       html
