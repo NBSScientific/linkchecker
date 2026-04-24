@@ -1,5 +1,5 @@
 {
-  "date": "2026-04-24T12:52:15.971Z",
+  "date": "2026-04-24T13:32:49.951Z",
   "source": "manual",
   "siteResults": [
     {
@@ -543,7 +543,7 @@
     {
       "site": "https://nbsscientific.nl",
       "pagesVisited": 0,
-      "date": "2026-04-24T12:52:15.971Z",
+      "date": "2026-04-24T13:32:49.951Z",
       "source": "manual",
       "results": [
         {
@@ -932,14 +932,7 @@
           "redirectsTo": null
         },
         {
-          "url": "https://nbsscientific.nl/product/afys3g-sigma-str-single-tube-capper/",
-          "source": "https://nbsscientific.nl",
-          "type": "ok",
-          "status": "200",
-          "redirectsTo": null
-        },
-        {
-          "url": "https://nbsscientific.nl/product/pipetboy-pro/",
+          "url": "https://nbsscientific.nl/product/afys3g-lambda768-tube-laser-marker/",
           "source": "https://nbsscientific.nl",
           "type": "ok",
           "status": "200",
@@ -947,6 +940,13 @@
         },
         {
           "url": "https://nbsscientific.nl/product/micronic-efc-refill-rack/",
+          "source": "https://nbsscientific.nl",
+          "type": "ok",
+          "status": "200",
+          "redirectsTo": null
+        },
+        {
+          "url": "https://nbsscientific.nl/product/hirschmann-glazen-buisjes-384-wells-formaat/",
           "source": "https://nbsscientific.nl",
           "type": "ok",
           "status": "200",
@@ -988,13 +988,6 @@
           "redirectsTo": null
         },
         {
-          "url": "https://nbsscientific.nl/nieuws",
-          "source": "https://nbsscientific.nl",
-          "type": "redirect",
-          "status": "301",
-          "redirectsTo": "https://nbsscientific.nl/nieuws/"
-        },
-        {
           "url": "https://goo.gl/maps/gqGGZvopnfq",
           "source": "https://nbsscientific.nl",
           "type": "redirect",
@@ -1028,13 +1021,18 @@
           "type": "ok",
           "status": "200",
           "redirectsTo": null
+        }
+      ],
+      "externalLinks": [
+        {
+          "url": "https://goo.gl/maps/gqGGZvopnfq",
+          "source": "https://nbsscientific.nl",
+          "domain": "goo.gl"
         },
         {
-          "url": "https://nbsscientific.nl/privacy-statement-nl/",
+          "url": "https://www.linkedin.com/company/nbs-scientific-nl/",
           "source": "https://nbsscientific.nl",
-          "type": "redirect",
-          "status": "301",
-          "redirectsTo": "https://nbsscientific.nl/privacy-statement/"
+          "domain": "www.linkedin.com"
         }
       ]
     }
