@@ -312,6 +312,7 @@
       <button class="filter-btn" data-rfilter="redirect">Redirects</button>
       <button class="filter-btn" data-rfilter="http">HTTP</button>
       <button class="filter-btn" data-rfilter="ok">Werkend</button>
+      <button class="filter-btn" data-rfilter="external">Externe links</button>
     </div>
     <div id="reportList"></div>
   </div>
@@ -619,12 +620,17 @@ async function startCheck() {
     const existingSiteResults = existingData.report ? existingData.report.siteResults : [];
 
     // Replace or add this domain's results
+    const extMap = buildExtMap(results, currentBaseHost);
+    const externalLinks = Object.entries(extMap).flatMap(([domain, links]) =>
+      links.map(l => ({ url: l.url, source: l.source, domain }))
+    );
     const thisSite = {
       site: url,
       pagesVisited: visited.size,
       date: new Date().toISOString(),
       source: 'manual',
-      results: results.map(r => ({ url: r.url, source: r.source, type: r.type, status: r.status, redirectsTo: r.redirectsTo || null }))
+      results: results.map(r => ({ url: r.url, source: r.source, type: r.type, status: r.status, redirectsTo: r.redirectsTo || null })),
+      externalLinks
     };
     const otherSites = existingSiteResults.filter(s => s.site !== url);
     const reportPayload = {
@@ -941,6 +947,36 @@ function renderReport() {
   else if (reportFilter === 'redirect') allResults = allResults.filter(r => r.type === 'redirect');
   else if (reportFilter === 'http') allResults = allResults.filter(r => r.url.startsWith('http://'));
   else if (reportFilter === 'ok') allResults = allResults.filter(r => r.type === 'ok');
+  else if (reportFilter === 'external') {
+    // Show external links grouped by domain
+    const extResults = siteResults.flatMap(({ site, externalLinks }) =>
+      (externalLinks || []).map(l => ({ ...l, site, type: 'external' }))
+    );
+    if (!extResults.length) { list.innerHTML = '<div class="empty">Geen externe links gevonden.</div>'; return; }
+
+    // Group by external domain
+    const byDomain = {};
+    for (const l of extResults) {
+      if (!byDomain[l.domain]) byDomain[l.domain] = [];
+      byDomain[l.domain].push(l);
+    }
+
+    list.innerHTML = Object.entries(byDomain).sort((a,b) => b[1].length - a[1].length).map(([domain, links]) => `
+      <div class="ext-domain">
+        <div class="ext-domain-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <span class="ext-domain-name">${domain}</span>
+          <span class="ext-domain-count">${links.length} link${links.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div>
+          ${links.map(l => `
+            <div class="ext-link-item">
+              <div class="ext-link-url"><a href="${l.url}" target="_blank" rel="noopener">${l.url}</a></div>
+              <div class="ext-link-src">Gevonden op: ${l.source} (${l.site.replace(/^https?:\/\//, '')})</div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+    return;
+  }
 
   if (!allResults.length) { list.innerHTML = '<div class="empty">Geen resultaten voor dit filter.</div>'; return; }
 
