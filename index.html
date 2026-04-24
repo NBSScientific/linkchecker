@@ -611,16 +611,26 @@ async function startCheck() {
   log('Complete. ' + broken + ' broken links found.');
   renderExtMap(buildExtMap(results, currentBaseHost));
 
-  // Save to last report
+  // Save to last report — merge with existing, only overwrite this domain
   try {
+    // First fetch existing report
+    const existing = await fetch('/api/report');
+    const existingData = await existing.json();
+    const existingSiteResults = existingData.report ? existingData.report.siteResults : [];
+
+    // Replace or add this domain's results
+    const thisSite = {
+      site: url,
+      pagesVisited: visited.size,
+      date: new Date().toISOString(),
+      source: 'manual',
+      results: results.map(r => ({ url: r.url, source: r.source, type: r.type, status: r.status, redirectsTo: r.redirectsTo || null }))
+    };
+    const otherSites = existingSiteResults.filter(s => s.site !== url);
     const reportPayload = {
       date: new Date().toISOString(),
       source: 'manual',
-      siteResults: [{
-        site: url,
-        pagesVisited: visited.size,
-        results: results.map(r => ({ url: r.url, source: r.source, type: r.type, status: r.status, redirectsTo: r.redirectsTo || null }))
-      }]
+      siteResults: [...otherSites, thisSite]
     };
     await fetch('/api/report', {
       method: 'POST',
@@ -628,7 +638,7 @@ async function startCheck() {
       body: JSON.stringify(reportPayload)
     });
     log('Resultaten opgeslagen in "Laatste rapport".');
-  } catch(e) {}
+  } catch(e) { log('Kon resultaten niet opslaan.'); }
 
   btn.disabled = false; btn.textContent = 'Check again'; running = false;
 }
@@ -823,7 +833,42 @@ let reportData = null;
 let reportFilter = 'all';
 let reportDomain = 'all';
 
-async function loadReport() {
+async function deleteDomain(site) {
+  if (!confirm(`Weet je zeker dat je alle resultaten van ${site} wilt verwijderen?`)) return;
+  try {
+    const existing = await fetch('/api/report');
+    const existingData = await existing.json();
+    if (!existingData.report) return;
+    const updated = {
+      ...existingData.report,
+      siteResults: existingData.report.siteResults.filter(s => s.site !== site)
+    };
+    await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    });
+    reportData = updated;
+    reportDomain = 'all';
+    // Rebuild domain filter buttons
+    const domainRow = document.getElementById('reportDomainRow');
+    domainRow.innerHTML = `<button class="filter-btn active" data-rdomain="all">Alle websites</button>` +
+      updated.siteResults.map(({ site }) => {
+        const label = site.replace(/^https?:\/\//, '');
+        return `<button class="filter-btn" data-rdomain="${site}">${label} <span data-delete="${site}" style="margin-left:4px;color:#c0392b;cursor:pointer" title="Verwijder">✕</span></button>`;
+      }).join('');
+    domainRow.querySelectorAll('[data-rdomain]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (e.target.dataset.delete) { deleteDomain(e.target.dataset.delete); return; }
+        reportDomain = btn.dataset.rdomain;
+        domainRow.querySelectorAll('[data-rdomain]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderReport();
+      });
+    });
+    renderReport();
+  } catch(e) { alert('Kon niet verwijderen.'); }
+}
   document.getElementById('reportMeta').textContent = 'Laden...';
   document.getElementById('reportList').innerHTML = '';
   document.getElementById('reportDomainRow').style.display = 'none';
@@ -851,11 +896,13 @@ async function loadReport() {
     domainRow.innerHTML = `<button class="filter-btn active" data-rdomain="all">Alle websites</button>` +
       data.report.siteResults.map(({ site }) => {
         const label = site.replace(/^https?:\/\//, '');
-        return `<button class="filter-btn" data-rdomain="${site}">${label}</button>`;
+        const scanDate = site.date ? new Date(site.date).toLocaleDateString('nl-NL') : '';
+        return `<button class="filter-btn" data-rdomain="${site}">${label} <span data-delete="${site}" style="margin-left:4px;color:#c0392b;cursor:pointer" title="Verwijder dit domein">✕</span></button>`;
       }).join('');
 
     domainRow.querySelectorAll('[data-rdomain]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        if (e.target.dataset.delete) { deleteDomain(e.target.dataset.delete); return; }
         reportDomain = btn.dataset.rdomain;
         domainRow.querySelectorAll('[data-rdomain]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -899,9 +946,16 @@ function renderReport() {
   const bySite = {};
   for (const r of allResults) { if (!bySite[r.site]) bySite[r.site] = []; bySite[r.site].push(r); }
 
-  list.innerHTML = Object.entries(bySite).map(([site, results]) => `
+  list.innerHTML = Object.entries(bySite).map(([site, results]) => {
+    const siteData = reportData.siteResults.find(s => s.site === site);
+    const scanDate = siteData && siteData.date ? new Date(siteData.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    const scanSource = siteData && siteData.source === 'manual' ? '🖐 Handmatig' : '🤖 Automatisch';
+    return `
     <div style="margin-bottom:20px">
-      <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">${site.replace(/^https?:\/\//, '')}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em">${site.replace(/^https?:\/\//, '')}</div>
+        <div style="font-size:11px;color:#aaa">${scanSource} · ${scanDate}</div>
+      </div>
       <div class="results-list">
         ${results.map(r => {
           let cls = 'badge-err', txt = r.status || 'ERR';
@@ -945,4 +999,3 @@ updateRemoveButtons();
 </script>
 </body>
 </html>
-
