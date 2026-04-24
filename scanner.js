@@ -98,9 +98,22 @@ async function scanSite(siteUrl) {
     results.push({ url, source, ...result });
   }
 
+  // Build external links map
+  const extMap = {};
+  for (const [url, source] of allLinks.entries()) {
+    try {
+      const host = new URL(url).hostname;
+      if (host !== baseHost) {
+        if (!extMap[host]) extMap[host] = [];
+        extMap[host].push({ url, source, domain: host });
+      }
+    } catch(e) {}
+  }
+  const externalLinks = Object.values(extMap).flat();
+
   const broken = results.filter(r => r.type === 'broken').length;
   console.log('  Done!', broken, 'broken links found.');
-  return { pagesVisited: visited.size, results };
+  return { pagesVisited: visited.size, results, externalLinks };
 }
 
 function buildEmailHtml(siteResults) {
@@ -255,8 +268,8 @@ async function main() {
 
   const siteResults = [];
   for (const site of SITES) {
-    const { pagesVisited, results } = await scanSite(site);
-    siteResults.push({ site, pagesVisited, results });
+    const { pagesVisited, results, externalLinks } = await scanSite(site);
+    siteResults.push({ site, pagesVisited, results, externalLinks });
   }
 
   console.log('\nAll sites scanned. Saving report...');
