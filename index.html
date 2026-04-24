@@ -869,6 +869,8 @@ async function deleteDomain(site) {
     renderReport();
   } catch(e) { alert('Kon niet verwijderen.'); }
 }
+
+async function loadReport() {
   document.getElementById('reportMeta').textContent = 'Laden...';
   document.getElementById('reportList').innerHTML = '';
   document.getElementById('reportDomainRow').style.display = 'none';
@@ -1000,4 +1002,3 @@ updateRemoveButtons();
 </script>
 </body>
 </html>
-
