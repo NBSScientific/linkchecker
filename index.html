@@ -171,8 +171,9 @@
 
   <!-- Tabs -->
   <div style="display:flex;gap:8px;margin-bottom:1.25rem">
-    <button class="tab-btn active" id="tabLinks" style="flex:1;height:42px;border-radius:8px;border:1px solid #ddd;background:#1a1a1a;color:#fff;font-size:15px;font-weight:500;cursor:pointer">Link checker</button>
-    <button class="tab-btn" id="tabSearch" style="flex:1;height:42px;border-radius:8px;border:1px solid #ddd;background:transparent;color:#444;font-size:15px;font-weight:500;cursor:pointer">Zoeken in website</button>
+    <button class="tab-btn active" id="tabLinks" style="flex:1;height:42px;border-radius:8px;border:1px solid #ddd;background:#1a1a1a;color:#fff;font-size:14px;font-weight:500;cursor:pointer">Link checker</button>
+    <button class="tab-btn" id="tabSearch" style="flex:1;height:42px;border-radius:8px;border:1px solid #ddd;background:transparent;color:#444;font-size:14px;font-weight:500;cursor:pointer">Zoeken</button>
+    <button class="tab-btn" id="tabReport" style="flex:1;height:42px;border-radius:8px;border:1px solid #ddd;background:transparent;color:#444;font-size:14px;font-weight:500;cursor:pointer">Laatste rapport</button>
   </div>
 
   <!-- Link checker panel -->
@@ -297,6 +298,24 @@
   </div>
 
 </div> <!-- end panelSearch -->
+
+<!-- Report panel -->
+<div id="panelReport" style="display:none">
+  <div class="card">
+    <div class="section-label">Laatste wekelijkse scan</div>
+    <p style="font-size:13px;color:#888;margin-bottom:12px">Resultaten van de meest recente automatische scan. Wordt overschreven zodra een nieuwe scan klaar is.</p>
+    <div id="reportMeta" style="font-size:13px;color:#888;margin-bottom:16px">Laden...</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="reportDomainRow" style="display:none"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="reportFilterRow" style="display:none">
+      <button class="filter-btn active" data-rfilter="all">Alles</button>
+      <button class="filter-btn" data-rfilter="broken">Broken</button>
+      <button class="filter-btn" data-rfilter="redirect">Redirects</button>
+      <button class="filter-btn" data-rfilter="http">HTTP</button>
+      <button class="filter-btn" data-rfilter="ok">Werkend</button>
+    </div>
+    <div id="reportList"></div>
+  </div>
+</div>
 
 </div> <!-- end container -->
 
@@ -614,28 +633,24 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 // ── Tab switching ───────────────────────────────────────────
-document.getElementById('tabLinks').addEventListener('click', () => {
-  document.getElementById('panelLinks').style.display = 'block';
-  document.getElementById('panelSearch').style.display = 'none';
-  document.getElementById('tabLinks').style.background = '#1a1a1a';
-  document.getElementById('tabLinks').style.color = '#fff';
-  document.getElementById('tabSearch').style.background = 'transparent';
-  document.getElementById('tabSearch').style.color = '#444';
-});
+function setTab(active) {
+  ['Links','Search','Report'].forEach(t => {
+    const panel = document.getElementById('panel' + t);
+    const btn = document.getElementById('tab' + t);
+    const isActive = t === active;
+    panel.style.display = isActive ? 'block' : 'none';
+    btn.style.background = isActive ? '#1a1a1a' : 'transparent';
+    btn.style.color = isActive ? '#fff' : '#444';
+  });
+}
 
+document.getElementById('tabLinks').addEventListener('click', () => setTab('Links'));
 document.getElementById('tabSearch').addEventListener('click', () => {
-  document.getElementById('panelLinks').style.display = 'none';
-  document.getElementById('panelSearch').style.display = 'block';
-  document.getElementById('tabSearch').style.background = '#1a1a1a';
-  document.getElementById('tabSearch').style.color = '#fff';
-  document.getElementById('tabLinks').style.background = 'transparent';
-  document.getElementById('tabLinks').style.color = '#444';
-  // Pre-fill search URL from link checker URL
+  setTab('Search');
   const linkUrl = document.getElementById('urlInput').value;
-  if (linkUrl && !document.getElementById('searchUrl').value) {
-    document.getElementById('searchUrl').value = linkUrl;
-  }
+  if (linkUrl && !document.getElementById('searchUrl').value) document.getElementById('searchUrl').value = linkUrl;
 });
+document.getElementById('tabReport').addEventListener('click', () => { setTab('Report'); loadReport(); });
 
 // ── Search functionality ────────────────────────────────────
 let searching = false;
@@ -782,6 +797,120 @@ document.getElementById('addKeywordBtn').addEventListener('click', () => {
 });
 
 document.getElementById('searchBtn').addEventListener('click', startSearch);
+
+// ── Last report ─────────────────────────────────────────────
+let reportData = null;
+let reportFilter = 'all';
+let reportDomain = 'all';
+
+async function loadReport() {
+  document.getElementById('reportMeta').textContent = 'Laden...';
+  document.getElementById('reportList').innerHTML = '';
+  document.getElementById('reportDomainRow').style.display = 'none';
+  document.getElementById('reportFilterRow').style.display = 'none';
+  try {
+    const res = await fetch('/api/report');
+    const data = await res.json();
+    if (!data.report) {
+      document.getElementById('reportMeta').textContent = 'Nog geen scan beschikbaar. De eerste scan wordt automatisch uitgevoerd op maandag om 7:00.';
+      return;
+    }
+    reportData = data.report;
+    reportDomain = 'all';
+    reportFilter = 'all';
+
+    const date = new Date(data.report.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const total = data.report.siteResults.reduce((s, r) => s + r.results.length, 0);
+    const broken = data.report.siteResults.reduce((s, r) => s + r.results.filter(l => l.type === 'broken').length, 0);
+    document.getElementById('reportMeta').textContent = `Laatste scan: ${date} · ${data.report.siteResults.length} websites · ${total} links · ${broken} broken`;
+
+    // Build domain filter buttons
+    const domainRow = document.getElementById('reportDomainRow');
+    domainRow.style.display = 'flex';
+    domainRow.innerHTML = `<button class="filter-btn active" data-rdomain="all">Alle websites</button>` +
+      data.report.siteResults.map(({ site }) => {
+        const label = site.replace(/^https?:\/\//, '');
+        return `<button class="filter-btn" data-rdomain="${site}">${label}</button>`;
+      }).join('');
+
+    domainRow.querySelectorAll('[data-rdomain]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        reportDomain = btn.dataset.rdomain;
+        domainRow.querySelectorAll('[data-rdomain]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderReport();
+      });
+    });
+
+    document.getElementById('reportFilterRow').style.display = 'flex';
+    // Reset status filter buttons
+    document.querySelectorAll('[data-rfilter]').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-rfilter="all"]').classList.add('active');
+    renderReport();
+  } catch(e) {
+    document.getElementById('reportMeta').textContent = 'Kon rapport niet laden.';
+  }
+}
+
+function renderReport() {
+  if (!reportData) return;
+  const list = document.getElementById('reportList');
+
+  // Filter by domain first
+  let siteResults = reportData.siteResults;
+  if (reportDomain !== 'all') siteResults = siteResults.filter(r => r.site === reportDomain);
+
+  // Flatten results
+  let allResults = [];
+  for (const { site, results } of siteResults) {
+    for (const r of results) allResults.push({ ...r, site });
+  }
+
+  // Apply status filter
+  if (reportFilter === 'broken') allResults = allResults.filter(r => r.type === 'broken');
+  else if (reportFilter === 'redirect') allResults = allResults.filter(r => r.type === 'redirect');
+  else if (reportFilter === 'http') allResults = allResults.filter(r => r.url.startsWith('http://'));
+  else if (reportFilter === 'ok') allResults = allResults.filter(r => r.type === 'ok');
+
+  if (!allResults.length) { list.innerHTML = '<div class="empty">Geen resultaten voor dit filter.</div>'; return; }
+
+  // Group by site
+  const bySite = {};
+  for (const r of allResults) { if (!bySite[r.site]) bySite[r.site] = []; bySite[r.site].push(r); }
+
+  list.innerHTML = Object.entries(bySite).map(([site, results]) => `
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">${site.replace(/^https?:\/\//, '')}</div>
+      <div class="results-list">
+        ${results.map(r => {
+          let cls = 'badge-err', txt = r.status || 'ERR';
+          if (r.type === 'ok') { cls = 'badge-ok'; txt = r.status || '200'; }
+          else if (r.type === 'redirect') { cls = 'badge-redirect'; txt = r.status || '301'; }
+          else if (r.status === '404') cls = 'badge-broken';
+          else if (r.status && r.status[0] === '5') cls = 'badge-warn';
+          const redirectLine = r.type === 'redirect' && r.redirectsTo ? `<div class="result-redirect">↳ ${r.redirectsTo}</div>` : '';
+          const httpBadge = r.url.startsWith('http://') ? `<span class="badge badge-http" style="font-size:10px;padding:2px 6px;margin-left:6px">HTTP</span>` : '';
+          return `<div class="result-item">
+            <span class="badge ${cls}">${txt}</span>
+            <div>
+              <div class="result-url"><a href="${r.url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${r.url}</a>${httpBadge}</div>
+              ${redirectLine}
+              <div class="result-src">Gevonden op: ${r.source}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+document.querySelectorAll('[data-rfilter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    reportFilter = btn.dataset.rfilter;
+    document.querySelectorAll('[data-rfilter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderReport();
+  });
+});
 
 // Init first row remove button listener
 document.querySelector('.keyword-remove').addEventListener('click', function() {
